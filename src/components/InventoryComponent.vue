@@ -1,19 +1,47 @@
 <script setup>
-import { reactive, ref } from "vue";
+import { reactive, ref, onMounted, onUpdated } from "vue";
 import DescriptionFillerComponent from "./DescriptionFillerComponent.vue";
 import ItemIconVue from "./ItemIconComponent.vue";
-const inventory = reactive(
-  new Array(25).fill(null).map((value, index) => {
-    return { id: index.toString(), content: value };
-  })
-);
+
+const inventory = ref([]);
+
+onMounted(() => {
+  if (localStorage.getItem("inventory")) {
+    inventory.value = JSON.parse(localStorage.getItem("inventory"));
+  } else {
+    inventory.value = new Array(25).fill(null).map((value, index) => {
+      return { id: index.toString(), content: value };
+    });
+
+    inventory.value[3].content = {
+      id: 3,
+      quantity: 10,
+    };
+    inventory.value[1].content = {
+      id: 2,
+      quantity: 3,
+    };
+    inventory.value[2].content = {
+      id: 2,
+      quantity: 1,
+    };
+    inventory.value[0].content = {
+      id: 1,
+      quantity: 6,
+    };
+  }
+});
+
+onUpdated(() => {
+  localStorage.setItem("inventory", JSON.stringify(inventory.value));
+});
 
 const selected = ref(null);
 const isEditing = ref(false);
 const deleteCount = ref(0);
 
 const dragStart = (evt, id) => {
-  const startSlot = inventory.find((slot) => slot.id === id);
+  const startSlot = inventory.value.find((slot) => slot.id === id);
   evt.dataTransfer.dropEffect = "move";
   evt.dataTransfer.effectAllowed = "move";
   evt.dataTransfer.setData("prevSlot", startSlot.id);
@@ -21,8 +49,8 @@ const dragStart = (evt, id) => {
 
 const onDrop = (evt, id) => {
   const prevSlotId = evt.dataTransfer.getData("prevSlot");
-  const prevSlot = inventory.find((slot) => slot.id === prevSlotId);
-  const newSlot = inventory.find((slot) => slot.id === id);
+  const prevSlot = inventory.value.find((slot) => slot.id === prevSlotId);
+  const newSlot = inventory.value.find((slot) => slot.id === id);
   if (newSlot === prevSlot) {
     return;
   }
@@ -43,10 +71,6 @@ const onDrop = (evt, id) => {
     newSlot.content = prevSlot.content;
     prevSlot.content = null;
   }
-};
-
-const saveState = () => {
-  localStorage.setItem("inventory");
 };
 
 const closeInfo = () => {
@@ -71,22 +95,6 @@ const items = [
     description: DescriptionFillerComponent,
   },
 ];
-inventory[3].content = {
-  id: 3,
-  quantity: 10,
-};
-inventory[1].content = {
-  id: 2,
-  quantity: 3,
-};
-inventory[2].content = {
-  id: 2,
-  quantity: 1,
-};
-inventory[0].content = {
-  id: 1,
-  quantity: 6,
-};
 const getItemIcon = (id) => {
   return items.find((item) => item.id === id)?.icon;
 };
